@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>ESP32 Servo Controller</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f6fa;
+      padding: 30px 15px;
+    }
+    button {
+      padding: 15px 20px;
+      margin: 6px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    #connect {
+      background: #2176d2;
+      color: white;
+    }
+    input {
+      width: 90%;
+      max-width: 350px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>ESP32 Servo Controller</h2>
+
+  <p id="status">Not connected</p>
+
+  <button id="connect" onclick="connectBLE()">
+    Connect Bluetooth
+  </button>
+
+  <h1><span id="angle">90</span>°</h1>
+
+  <input type="range" id="slider"
+         min="45" max="135" value="90"
+         oninput="showAngle(this.value)">
+
+  <p>
+    <button onclick="sendAngle(45)">45°</button>
+    <button onclick="sendAngle(90)">90°</button>
+    <button onclick="sendAngle(135)">135°</button>
+  </p>
+
+  <button onclick="sendSlider()">Move Servo</button>
+
+  <script>
+    const serviceUUID =
+      "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+
+    const characteristicUUID =
+      "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+    let characteristic = null;
+
+    function showAngle(angle) {
+      document.getElementById("angle").textContent = angle;
+    }
+
+    async function connectBLE() {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: "ESP32-Servo" }],
+          optionalServices: [serviceUUID]
+        });
+
+        device.addEventListener(
+          "gattserverdisconnected",
+          () => {
+            characteristic = null;
+            document.getElementById("status").textContent =
+              "Disconnected";
+          }
+        );
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(
+          serviceUUID
+        );
+
+        characteristic = await service.getCharacteristic(
+          characteristicUUID
+        );
+
+        document.getElementById("status").textContent =
+          "Connected!";
+      } catch (error) {
+        document.getElementById("status").textContent =
+          "Connection failed: " + error.message;
+      }
+    }
+
+    async function sendAngle(angle) {
+      if (!characteristic) {
+        alert("Connect Bluetooth first!");
+        return;
+      }
+
+      try {
+        const data = new TextEncoder().encode(
+          String(angle)
+        );
+
+        await characteristic.writeValueWithResponse(data);
+
+        document.getElementById("slider").value = angle;
+        showAngle(angle);
+      } catch (error) {
+        alert("Failed to send angle: " + error.message);
+      }
+    }
+
+    function sendSlider() {
+      const angle =
+        document.getElementById("slider").value;
+
+      sendAngle(angle);
+    }
+  </script>
+
+</body>
+</html>
