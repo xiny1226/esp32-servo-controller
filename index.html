@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -56,7 +55,7 @@
   </button>
 
   <p>
-    <button id="on" onclick="sendAngle(60)" disabled>
+    <button id="on" onclick="sendAngle(30)" disabled>
       ON
     </button>
 
@@ -134,7 +133,7 @@
         await characteristic.writeValueWithResponse(data);
 
         document.getElementById("command").textContent =
-          angle === 60
+          angle === 30
             ? "Last command: ON"
             : "Last command: OFF";
       } catch (error) {
