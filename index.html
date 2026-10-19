@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-  <title>ESP32 Servo Controller</title>
+  <title>Light Switch Controller</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,27 +12,41 @@
       background: #f5f6fa;
       padding: 30px 15px;
     }
+
     button {
-      padding: 15px 20px;
-      margin: 6px;
-      font-size: 18px;
+      padding: 18px 30px;
+      margin: 8px;
+      font-size: 20px;
       border-radius: 12px;
-      border: 1px solid #ccc;
-      background: white;
+      border: none;
+      cursor: pointer;
     }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
     #connect {
       background: #2176d2;
       color: white;
+      font-size: 18px;
     }
-    input {
-      width: 90%;
-      max-width: 350px;
+
+    #on {
+      background: #239b56;
+      color: white;
+    }
+
+    #off {
+      background: #d64040;
+      color: white;
     }
   </style>
 </head>
-<body>
 
-  <h2>ESP32 Servo Controller</h2>
+<body>
+  <h2>Light Switch Controller</h2>
 
   <p id="status">Not connected</p>
 
@@ -40,19 +54,17 @@
     Connect Bluetooth
   </button>
 
-  <h1><span id="angle">90</span>°</h1>
-
-  <input type="range" id="slider"
-         min="45" max="135" value="90"
-         oninput="showAngle(this.value)">
-
   <p>
-    <button onclick="sendAngle(45)">45°</button>
-    <button onclick="sendAngle(90)">90°</button>
-    <button onclick="sendAngle(135)">135°</button>
+    <button id="on" onclick="sendAngle(0)" disabled>
+      ON
+    </button>
+
+    <button id="off" onclick="sendAngle(30)" disabled>
+      OFF
+    </button>
   </p>
 
-  <button onclick="sendSlider()">Move Servo</button>
+  <p id="command">No command sent yet</p>
 
   <script>
     const serviceUUID =
@@ -63,30 +75,31 @@
 
     let characteristic = null;
 
-    function showAngle(angle) {
-      document.getElementById("angle").textContent = angle;
+    function enableControls(enabled) {
+      document.getElementById("on").disabled = !enabled;
+      document.getElementById("off").disabled = !enabled;
     }
 
     async function connectBLE() {
+      const connectButton = document.getElementById("connect");
+      connectButton.disabled = true;
+
       try {
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: "ESP32-Servo" }],
-          optionalServices: [serviceUUID]
+          filters: [{ services: [serviceUUID] }]
         });
 
-        device.addEventListener(
-          "gattserverdisconnected",
-          () => {
-            characteristic = null;
-            document.getElementById("status").textContent =
-              "Disconnected";
-          }
-        );
+        device.addEventListener("gattserverdisconnected", () => {
+          characteristic = null;
+          enableControls(false);
+          connectButton.disabled = false;
+
+          document.getElementById("status").textContent =
+            "Disconnected";
+        });
 
         const server = await device.gatt.connect();
-        const service = await server.getPrimaryService(
-          serviceUUID
-        );
+        const service = await server.getPrimaryService(serviceUUID);
 
         characteristic = await service.getCharacteristic(
           characteristicUUID
@@ -94,7 +107,13 @@
 
         document.getElementById("status").textContent =
           "Connected!";
+
+        enableControls(true);
       } catch (error) {
+        characteristic = null;
+        enableControls(false);
+        connectButton.disabled = false;
+
         document.getElementById("status").textContent =
           "Connection failed: " + error.message;
       }
@@ -102,31 +121,27 @@
 
     async function sendAngle(angle) {
       if (!characteristic) {
-        alert("Connect Bluetooth first!");
         return;
       }
 
+      enableControls(false);
+
       try {
-        const data = new TextEncoder().encode(
-          String(angle)
-        );
+        const data = new TextEncoder().encode(String(angle));
 
         await characteristic.writeValueWithResponse(data);
 
-        document.getElementById("slider").value = angle;
-        showAngle(angle);
+        document.getElementById("command").textContent =
+          angle === 0
+            ? "Last command: ON"
+            : "Last command: OFF";
       } catch (error) {
-        alert("Failed to send angle: " + error.message);
+        document.getElementById("command").textContent =
+          "Failed to send command: " + error.message;
+      } finally {
+        enableControls(characteristic !== null);
       }
     }
-
-    function sendSlider() {
-      const angle =
-        document.getElementById("slider").value;
-
-      sendAngle(angle);
-    }
   </script>
-
 </body>
 </html>
