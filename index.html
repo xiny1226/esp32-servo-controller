@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -56,11 +55,11 @@
   </button>
 
   <p>
-    <button id="on" onclick="sendAngle(45)" disabled>
+    <button id="on" onclick="sendAngle(30)" disabled>
       ON
     </button>
 
-    <button id="off" onclick="sendAngle(135)" disabled>
+    <button id="off" onclick="sendAngle(150)" disabled>
       OFF
     </button>
   </p>
@@ -134,9 +133,9 @@
         await characteristic.writeValueWithResponse(data);
 
         document.getElementById("command").textContent =
-          angle === 45
-            ? "Last command: ON (45 degrees)"
-            : "Last command: OFF (135 degrees)";
+          angle === 30
+            ? "Last command: ON"
+            : "Last command: OFF";
       } catch (error) {
         document.getElementById("command").textContent =
           "Failed to send command: " + error.message;
@@ -147,4 +146,3 @@
   </script>
 </body>
 </html>
-
