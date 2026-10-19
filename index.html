@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -55,11 +56,11 @@
   </button>
 
   <p>
-    <button id="on" onclick="sendAngle(0)" disabled>
+    <button id="on" onclick="sendAngle(45)" disabled>
       ON
     </button>
 
-    <button id="off" onclick="sendAngle(30)" disabled>
+    <button id="off" onclick="sendAngle(135)" disabled>
       OFF
     </button>
   </p>
@@ -86,7 +87,8 @@
 
       try {
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [serviceUUID] }]
+          filters: [{ name: "Light Switch Controller" }],
+          optionalServices: [serviceUUID]
         });
 
         device.addEventListener("gattserverdisconnected", () => {
@@ -132,9 +134,9 @@
         await characteristic.writeValueWithResponse(data);
 
         document.getElementById("command").textContent =
-          angle === 0
-            ? "Last command: ON"
-            : "Last command: OFF";
+          angle === 45
+            ? "Last command: ON (45 degrees)"
+            : "Last command: OFF (135 degrees)";
       } catch (error) {
         document.getElementById("command").textContent =
           "Failed to send command: " + error.message;
@@ -145,3 +147,4 @@
   </script>
 </body>
 </html>
+
